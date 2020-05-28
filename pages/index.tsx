@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Wrapper from "../components/Wrapper";
+import RuleBar from "../components/RuleBar";
 import {
   Environment,
   CanvasRenderer,
@@ -9,70 +10,102 @@ import {
   LineChartRenderer,
   KDTree,
 } from "flocc";
+import { Pixel, isPixel, match } from "../types/Pixel";
+import { Rule } from "../types/Rule";
 
 const run = (environment: Environment) => {
   environment.tick();
-  window.requestAnimationFrame(() => run(environment));
+  animationFrame = window.requestAnimationFrame(() => run(environment));
 };
 
-interface Pixel {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-}
+let environment: Environment;
+let renderer: CanvasRenderer;
+let terrain: Terrain;
+let animationFrame: number;
 
-const isPixel = (p: any): p is Pixel => {
-  return (
-    typeof p === "object" &&
-    p.hasOwnProperty("r") &&
-    p.hasOwnProperty("g") &&
-    p.hasOwnProperty("b") &&
-    p.hasOwnProperty("a")
-  );
-};
-
-const match = (p1: Pixel, p2: Pixel): boolean => {
-  return p1.r === p2.r && p1.g === p2.g && p1.b === p2.b && p1.a === p2.a;
-};
+const { BLACK, WHITE } = Colors;
 
 export default () => {
+  const [rules, setRules] = useState<Rule[]>([
+    {
+      input: [BLACK, WHITE, BLACK, WHITE, WHITE, BLACK, WHITE, BLACK],
+      self: BLACK,
+      output: WHITE,
+    },
+    {
+      input: [WHITE, BLACK, WHITE, BLACK, BLACK, WHITE, BLACK, WHITE],
+      self: WHITE,
+      output: BLACK,
+    },
+  ]);
   useEffect(() => {
-    const [width, height] = [600, 600];
-    const environment = new Environment({ width, height });
-    const renderer = new CanvasRenderer(environment, {
+    const [width, height] = [300, 300];
+    environment = new Environment({ width, height });
+    renderer = new CanvasRenderer(environment, {
       width,
       height,
     });
     renderer.mount("#canvas");
-    const terrain = new Terrain(width / 2, height / 2, {
+    terrain = new Terrain(width / 4, height / 4, {
       async: false,
       grayscale: false,
-      scale: 2,
+      scale: 4,
     });
     terrain.init((x, y) => {
       return utils.sample([Colors.BLACK, Colors.WHITE]);
     });
-    terrain.addRule((x: number, y: number) => {
-      const left = terrain.sample(x - 1, y);
-      const right = terrain.sample(x + 1, y);
+    terrain.addRule((x, y) => {
       const here = terrain.sample(x, y);
-      if (!isPixel(left)) return here;
-      if (!isPixel(right)) return here;
-      if (!isPixel(here)) return here;
-      if (match(left, right) && !match(left, here)) {
-        return left;
+      if (!isPixel(here)) return;
+      const neighbors = terrain.neighbors(x, y);
+      for (let rule of rules) {
+        const passes =
+          neighbors.every((neighbor, i) => {
+            return isPixel(neighbor) && match(neighbor, rule.input[i]);
+          }) && match(here, rule.self);
+        if (passes) return rule.output;
       }
-      return Math.random() > 0.03
-        ? here
-        : terrain.sample(x, y + utils.sample([1, -1]));
+      return here;
     });
     environment.use(terrain);
     run(environment);
-  }, []);
+    return () => {
+      environment = null;
+      renderer = null;
+      terrain = null;
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [rules]);
   return (
     <Wrapper>
-      <div id="canvas"></div>
+      <div>
+        {rules.map((rule, i) => (
+          <RuleBar
+            key={i}
+            rule={rule}
+            update={(r) =>
+              setRules(rules.map((_rule) => (_rule === rule ? r : _rule)))
+            }
+            deleteRule={() => setRules(rules.filter((_rule) => rule !== _rule))}
+          />
+        ))}
+        <button
+          onClick={() =>
+            setRules(
+              rules.concat({
+                input: new Array(8).fill(Colors.WHITE),
+                self: Colors.BLACK,
+                output: Colors.BLACK,
+              })
+            )
+          }
+        >
+          +
+        </button>
+      </div>
+      <div style={{ padding: 40, position: "fixed", top: 0, right: 0 }}>
+        <div id="canvas"></div>
+      </div>
     </Wrapper>
   );
 };
