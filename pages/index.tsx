@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Refresh, Plus } from "@styled-icons/foundation";
 import Wrapper from "../components/Wrapper";
 import RuleBar from "../components/RuleBar";
 import {
@@ -26,6 +27,7 @@ let animationFrame: number;
 const { BLACK, WHITE } = Colors;
 
 export default () => {
+  const [refresh, setRefresh] = useState<number>(0);
   const [rules, setRules] = useState<Rule[]>([
     {
       input: [BLACK, WHITE, BLACK, WHITE, WHITE, BLACK, WHITE, BLACK],
@@ -75,10 +77,10 @@ export default () => {
       terrain = null;
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [rules]);
+  }, [rules, refresh]);
   return (
     <Wrapper>
-      <div>
+      <div style={{ textAlign: "center" }}>
         {rules.map((rule, i) => (
           <RuleBar
             key={i}
@@ -89,7 +91,9 @@ export default () => {
             deleteRule={() => setRules(rules.filter((_rule) => rule !== _rule))}
           />
         ))}
-        <button
+        <Plus
+          style={{ cursor: "pointer" }}
+          width={26}
           onClick={() =>
             setRules(
               rules.concat({
@@ -99,12 +103,23 @@ export default () => {
               })
             )
           }
-        >
-          +
-        </button>
+        />
       </div>
-      <div style={{ padding: 40, position: "fixed", top: 0, right: 0 }}>
+      <div
+        style={{
+          padding: 40,
+          position: "fixed",
+          top: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
         <div id="canvas"></div>
+        <Refresh
+          style={{ cursor: "pointer" }}
+          onClick={() => setRefresh(refresh + 1)}
+          width={28}
+        />
       </div>
     </Wrapper>
   );

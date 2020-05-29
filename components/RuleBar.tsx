@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { Colors } from "flocc";
 import { Rule } from "../types/Rule";
 import { match } from "../types/Pixel";
+import { X } from "@styled-icons/foundation";
 
 const iToX = (i: number): number => {
   return (i < 4 ? i : i + 1) % 3;
@@ -17,9 +18,10 @@ const Tile = styled.rect`
 
 const Delete = styled.button`
   appearance: none;
-  border: 2px solid #999;
+  border: 2px solid #000;
   background: #fff;
-  color: #999;
+  color: #000;
+  cursor: pointer;
   border-radius: 50%;
   display: none;
   position: absolute;
@@ -30,7 +32,7 @@ const Delete = styled.button`
   text-align: center;
   width: 20px;
   padding: 0;
-  font-size: 16px;
+  font-size: 14px;
 `;
 
 const RuleBar = styled.div`
@@ -119,7 +121,9 @@ export default ({
           }}
         />
       </svg>
-      <Delete onClick={deleteRule}>&times;</Delete>
+      <Delete onClick={deleteRule}>
+        <X width={12} />
+      </Delete>
     </RuleBar>
   );
 };
