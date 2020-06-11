@@ -5,5 +5,4 @@ export default styled.div`
   overflow-x: hidden;
   height: calc(100vh - 40px);
   flex: 1 0 330px;
-  padding: 20px 0;
 `;

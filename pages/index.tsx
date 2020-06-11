@@ -15,6 +15,8 @@ import { Pixel, isPixel, match } from "../types/Pixel";
 import { Rule } from "../types/Rule";
 import CanvasContainer from "../components/CanvasContainer";
 import RuleContainer from "../components/RuleContainer";
+import pixelToRGBA from "../utils/pixelToRGBA";
+import Palette from "../components/Palette";
 
 const run = (environment: Environment) => {
   environment.tick();
@@ -57,7 +59,7 @@ export default () => {
       scale: 4,
     });
     terrain.init((x, y) => {
-      return utils.sample([Colors.BLACK, Colors.WHITE]);
+      return utils.sample(palette);
     });
     terrain.addRule((x, y) => {
       const here = terrain.sample(x, y);
@@ -81,9 +83,11 @@ export default () => {
       window.cancelAnimationFrame(animationFrame);
     };
   }, [rules, refresh]);
+  console.log("rendering index", palette);
   return (
     <Wrapper>
       <RuleContainer>
+        <h2>Rules</h2>
         {rules.map((rule, i) => (
           <RuleBar
             key={i}
@@ -109,6 +113,11 @@ export default () => {
         />
       </RuleContainer>
       <CanvasContainer>
+        <Palette
+          palette={palette}
+          setPalette={setPalette}
+          setRefresh={() => setRefresh(refresh + 1)}
+        />
         <div id="canvas"></div>
         <Refresh
           style={{ cursor: "pointer" }}
