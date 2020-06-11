@@ -13,6 +13,8 @@ import {
 } from "flocc";
 import { Pixel, isPixel, match } from "../types/Pixel";
 import { Rule } from "../types/Rule";
+import CanvasContainer from "../components/CanvasContainer";
+import RuleContainer from "../components/RuleContainer";
 
 const run = (environment: Environment) => {
   environment.tick();
@@ -27,6 +29,7 @@ let animationFrame: number;
 const { BLACK, WHITE } = Colors;
 
 export default () => {
+  const [palette, setPalette] = useState<Pixel[]>([Colors.BLACK, Colors.WHITE]);
   const [refresh, setRefresh] = useState<number>(0);
   const [rules, setRules] = useState<Rule[]>([
     {
@@ -80,7 +83,7 @@ export default () => {
   }, [rules, refresh]);
   return (
     <Wrapper>
-      <div style={{ textAlign: "center" }}>
+      <RuleContainer>
         {rules.map((rule, i) => (
           <RuleBar
             key={i}
@@ -104,23 +107,15 @@ export default () => {
             )
           }
         />
-      </div>
-      <div
-        style={{
-          padding: 40,
-          position: "fixed",
-          top: 0,
-          right: 0,
-          textAlign: "center",
-        }}
-      >
+      </RuleContainer>
+      <CanvasContainer>
         <div id="canvas"></div>
         <Refresh
           style={{ cursor: "pointer" }}
           onClick={() => setRefresh(refresh + 1)}
           width={28}
         />
-      </div>
+      </CanvasContainer>
     </Wrapper>
   );
 };

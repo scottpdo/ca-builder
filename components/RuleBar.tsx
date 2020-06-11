@@ -3,6 +3,7 @@ import { Colors } from "flocc";
 import { Rule } from "../types/Rule";
 import { match } from "../types/Pixel";
 import { X } from "@styled-icons/foundation";
+import pixelToRGBA from "../utils/pixelToRGBA";
 
 const iToX = (i: number): number => {
   return (i < 4 ? i : i + 1) % 3;
@@ -18,9 +19,10 @@ const Tile = styled.rect`
 
 const Delete = styled.button`
   appearance: none;
-  border: 2px solid #000;
+  border: 0 none;
   background: #fff;
-  color: #000;
+  box-shadow: 0 1px 2px #999;
+  color: #999;
   cursor: pointer;
   border-radius: 50%;
   display: none;
@@ -36,13 +38,15 @@ const Delete = styled.button`
 `;
 
 const RuleBar = styled.div`
+  border: 1px solid #999;
+  box-shadow: 0 1px 2px 0 #999;
+  border-radius: 3px;
   align-items: center;
   display: flex;
   width: 300px;
   justify-content: space-between;
-  margin: 10px 0;
+  margin: 0 20px 20px 0;
   padding: 10px;
-  border: 1px solid #999;
 
   span {
     font-size: 32px;
@@ -72,7 +76,7 @@ export default ({
         {rule.input.map((p, i) => (
           <g key={i}>
             <Tile
-              fill={`rgb(${p.r}, ${p.g}, ${p.b})`}
+              fill={pixelToRGBA(p)}
               x={iToX(i) * size}
               y={iToY(i) * size}
               width={size}
@@ -87,7 +91,7 @@ export default ({
             />
             {i === 3 && (
               <Tile
-                fill={`rgb(${rule.self.r}, ${rule.self.g}, ${rule.self.b})`}
+                fill={pixelToRGBA(rule.self)}
                 x={size}
                 y={size}
                 width={size}
@@ -107,7 +111,7 @@ export default ({
       <span>&rarr;</span>
       <svg height={size} width={size}>
         <Tile
-          fill={`rgb(${rule.output.r}, ${rule.output.g}, ${rule.output.b})`}
+          fill={pixelToRGBA(rule.output)}
           x={0}
           y={0}
           width={size}
