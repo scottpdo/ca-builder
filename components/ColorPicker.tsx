@@ -42,7 +42,7 @@ export default ({
 }) => {
   const props: {
     color?: Pixel;
-    colors?: Pixel[];
+    colors?: string[];
     onChangeComplete: ColorChange;
   } = {
     color,
