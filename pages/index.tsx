@@ -2,20 +2,11 @@ import { useState, useEffect } from "react";
 import { Refresh, Plus } from "@styled-icons/foundation";
 import Wrapper from "../components/Wrapper";
 import RuleBar from "../components/RuleBar";
-import {
-  Environment,
-  CanvasRenderer,
-  Terrain,
-  Colors,
-  utils,
-  LineChartRenderer,
-  KDTree,
-} from "flocc";
+import { Environment, CanvasRenderer, Terrain, Colors, utils } from "flocc";
 import { Pixel, isPixel, match } from "../types/Pixel";
 import { Rule } from "../types/Rule";
 import CanvasContainer from "../components/CanvasContainer";
 import RuleContainer from "../components/RuleContainer";
-import pixelToRGBA from "../utils/pixelToRGBA";
 import Palette from "../components/Palette";
 
 const run = (environment: Environment) => {
@@ -28,21 +19,19 @@ let renderer: CanvasRenderer;
 let terrain: Terrain;
 let animationFrame: number;
 
-const { BLACK, WHITE } = Colors;
-
 export default () => {
   const [palette, setPalette] = useState<Pixel[]>([Colors.BLACK, Colors.WHITE]);
   const [refresh, setRefresh] = useState<number>(0);
   const [rules, setRules] = useState<Rule[]>([
     {
-      input: [BLACK, WHITE, BLACK, WHITE, WHITE, BLACK, WHITE, BLACK],
-      self: BLACK,
-      output: WHITE,
+      input: [1, 0, 1, 0, 0, 1, 0, 1],
+      self: 1,
+      output: 0,
     },
     {
-      input: [WHITE, BLACK, WHITE, BLACK, BLACK, WHITE, BLACK, WHITE],
-      self: WHITE,
-      output: BLACK,
+      input: [0, 1, 0, 1, 1, 0, 1, 0],
+      self: 0,
+      output: 1,
     },
   ]);
   useEffect(() => {
@@ -58,9 +47,7 @@ export default () => {
       grayscale: false,
       scale: 4,
     });
-    terrain.init((x, y) => {
-      return utils.sample(palette);
-    });
+    terrain.init((x, y) => utils.sample(palette));
     terrain.addRule((x, y) => {
       const here = terrain.sample(x, y);
       if (!isPixel(here)) return;
@@ -68,9 +55,9 @@ export default () => {
       for (let rule of rules) {
         const passes =
           neighbors.every((neighbor, i) => {
-            return isPixel(neighbor) && match(neighbor, rule.input[i]);
-          }) && match(here, rule.self);
-        if (passes) return rule.output;
+            return isPixel(neighbor) && match(neighbor, palette[rule.input[i]]);
+          }) && match(here, palette[rule.self]);
+        if (passes) return palette[rule.output];
       }
       return here;
     });
@@ -82,20 +69,20 @@ export default () => {
       terrain = null;
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [rules, refresh]);
-  console.log("rendering index", palette);
+  }, [palette, rules, refresh]);
   return (
     <Wrapper>
       <RuleContainer>
         <h2>Rules</h2>
         {rules.map((rule, i) => (
           <RuleBar
+            deleteRule={() => setRules(rules.filter((_rule) => rule !== _rule))}
             key={i}
+            palette={palette}
             rule={rule}
             update={(r) =>
               setRules(rules.map((_rule) => (_rule === rule ? r : _rule)))
             }
-            deleteRule={() => setRules(rules.filter((_rule) => rule !== _rule))}
           />
         ))}
         <Plus
@@ -104,25 +91,35 @@ export default () => {
           onClick={() =>
             setRules(
               rules.concat({
-                input: new Array(8).fill(Colors.WHITE),
-                self: Colors.BLACK,
-                output: Colors.BLACK,
+                input: new Array(8).fill(1),
+                self: 0,
+                output: 1,
               })
             )
           }
         />
       </RuleContainer>
       <CanvasContainer>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            flexGrow: 2,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div id="canvas"></div>
+          <Refresh
+            style={{ cursor: "pointer" }}
+            onClick={() => setRefresh(refresh + 1)}
+            width={28}
+          />
+        </div>
         <Palette
           palette={palette}
           setPalette={setPalette}
           setRefresh={() => setRefresh(refresh + 1)}
-        />
-        <div id="canvas"></div>
-        <Refresh
-          style={{ cursor: "pointer" }}
-          onClick={() => setRefresh(refresh + 1)}
-          width={28}
         />
       </CanvasContainer>
     </Wrapper>

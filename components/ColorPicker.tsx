@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { CompactPicker } from "react-color";
 import { Pixel } from "../types/Pixel";
+import pixelToHex from "../utils/pixelToHex";
 
 const ColorPicker = styled.div`
   background: #fff;
@@ -24,16 +25,33 @@ const ColorPicker = styled.div`
   }
 `;
 
+type ColorChange = (color: {
+  rgb: { r: number; g: number; b: number };
+}) => void;
+
 export default ({
   color,
+  colors,
   onChange,
+  style,
 }: {
-  color: Pixel;
-  onChange: (color: { rgb: { r: number; g: number; b: number } }) => void;
+  color?: Pixel;
+  colors?: Pixel[];
+  onChange: ColorChange;
+  style?: React.CSSProperties;
 }) => {
+  const props: {
+    color?: Pixel;
+    colors?: Pixel[];
+    onChangeComplete: ColorChange;
+  } = {
+    color,
+    onChangeComplete: onChange,
+  };
+  if (colors) props.colors = colors.map(pixelToHex);
   return (
-    <ColorPicker>
-      <CompactPicker color={color} onChangeComplete={onChange} />
+    <ColorPicker style={style}>
+      <CompactPicker {...props} />
     </ColorPicker>
   );
 };
