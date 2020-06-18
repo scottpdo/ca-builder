@@ -4,7 +4,7 @@ import pixelToRGBA from "../utils/pixelToRGBA";
 import { useState, useEffect } from "react";
 import ColorPicker from "./ColorPicker";
 import { Plus, X } from "@styled-icons/foundation";
-import Delete from "./Delete";
+import Delete from "./styled/Delete";
 
 const Palette = styled.div`
   align-items: center;

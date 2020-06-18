@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Refresh, Plus } from "@styled-icons/foundation";
 import Wrapper from "../components/Wrapper";
-import RuleBar from "../components/RuleBar";
+import NeighborRuleBar from "../components/NeighborRuleBar";
 import { Environment, CanvasRenderer, Terrain, Colors, utils } from "flocc";
 import { Pixel, isPixel, match } from "../types/Pixel";
-import { Rule } from "../types/Rule";
+import { Rule, NeighborRule, ThresholdRule, Comparators } from "../types/Rule";
 import CanvasContainer from "../components/CanvasContainer";
 import RuleContainer from "../components/RuleContainer";
 import Palette from "../components/Palette";
@@ -22,17 +22,32 @@ let animationFrame: number;
 export default () => {
   const [palette, setPalette] = useState<Pixel[]>([Colors.BLACK, Colors.WHITE]);
   const [refresh, setRefresh] = useState<number>(0);
+  const alive = new Map();
+  alive.set([1, 3], Comparators.EQ);
+  const dead = new Map();
+  dead.set([1, 2], Comparators.LT);
+  dead.set([1, 3], Comparators.GT);
   const [rules, setRules] = useState<Rule[]>([
-    {
-      input: [1, 0, 1, 0, 0, 1, 0, 1],
+    new ThresholdRule({
+      thresholds: alive,
       self: 1,
-      output: 0,
-    },
-    {
-      input: [0, 1, 0, 1, 1, 0, 1, 0],
+      output: 1,
+    }),
+    new ThresholdRule({
+      thresholds: alive,
       self: 0,
       output: 1,
-    },
+    }),
+    new ThresholdRule({
+      thresholds: dead,
+      self: 1,
+      output: 0,
+    }),
+    new ThresholdRule({
+      thresholds: dead,
+      self: 0,
+      output: 0,
+    }),
   ]);
   useEffect(() => {
     const [width, height] = [300, 300];
@@ -51,13 +66,47 @@ export default () => {
     terrain.addRule((x, y) => {
       const here = terrain.sample(x, y);
       if (!isPixel(here)) return;
-      const neighbors = terrain.neighbors(x, y);
+      const neighbors = terrain.neighbors(x, y, 1, true);
       for (let rule of rules) {
-        const passes =
-          neighbors.every((neighbor, i) => {
-            return isPixel(neighbor) && match(neighbor, palette[rule.input[i]]);
-          }) && match(here, palette[rule.self]);
-        if (passes) return palette[rule.output];
+        const matchesHere = match(here, palette[rule.self]);
+        if (!matchesHere) continue;
+
+        if (rule instanceof NeighborRule) {
+          const passes =
+            neighbors.every((neighbor, i) => {
+              return (
+                isPixel(neighbor) &&
+                rule instanceof NeighborRule &&
+                match(neighbor, palette[rule.input[i]])
+              );
+            }) && matchesHere;
+          if (passes) return palette[rule.output];
+        } else if (rule instanceof ThresholdRule) {
+          const passes = Array.from(rule.thresholds.keys()).some((arr) => {
+            const [colorIndex, threshold] = arr;
+            if (!(rule instanceof ThresholdRule)) return false;
+            const color = palette[colorIndex];
+            const comparator = rule.thresholds.get(arr);
+            const matchingNeighbors = neighbors.filter(
+              (neighbor) => isPixel(neighbor) && match(neighbor, color)
+            ).length;
+            switch (comparator) {
+              case Comparators.EQ:
+                return matchingNeighbors === threshold;
+              case Comparators.LT:
+                return matchingNeighbors < threshold;
+              case Comparators.GT:
+                return matchingNeighbors > threshold;
+              case Comparators.LTE:
+                return matchingNeighbors <= threshold;
+              case Comparators.GTE:
+                return matchingNeighbors >= threshold;
+              default:
+                return false;
+            }
+          });
+          if (passes) return palette[rule.output];
+        }
       }
       return here;
     });
@@ -74,54 +123,64 @@ export default () => {
     <Wrapper>
       <RuleContainer>
         <h2>Rules</h2>
-        {rules.map((rule, i) => (
-          <RuleBar
-            deleteRule={() => setRules(rules.filter((_rule) => rule !== _rule))}
-            key={i}
-            palette={palette}
-            rule={rule}
-            update={(r) =>
-              setRules(rules.map((_rule) => (_rule === rule ? r : _rule)))
-            }
-          />
-        ))}
+        {rules.map((rule, i) => {
+          return rule instanceof NeighborRule ? (
+            <NeighborRuleBar
+              deleteRule={() =>
+                setRules(rules.filter((_rule) => rule !== _rule))
+              }
+              key={i}
+              palette={palette}
+              rule={rule}
+              update={(r) =>
+                setRules(rules.map((_rule) => (_rule === rule ? r : _rule)))
+              }
+            />
+          ) : rule instanceof ThresholdRule ? (
+            <p key={i}>threshold rule</p>
+          ) : null;
+        })}
         <Plus
           style={{ cursor: "pointer" }}
           width={26}
           onClick={() =>
             setRules(
-              rules.concat({
-                input: new Array(8).fill(1),
-                self: 0,
-                output: 1,
-              })
+              rules.concat(
+                new NeighborRule({
+                  input: new Array(8).fill(1),
+                  self: 0,
+                  output: 1,
+                })
+              )
             )
           }
         />
       </RuleContainer>
-      <CanvasContainer>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flexGrow: 2,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div id="canvas"></div>
-          <Refresh
-            style={{ cursor: "pointer" }}
-            onClick={() => setRefresh(refresh + 1)}
-            width={28}
+      <div style={{ width: "100%" }}>
+        <CanvasContainer>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flexGrow: 2,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div id="canvas"></div>
+            <Refresh
+              style={{ cursor: "pointer" }}
+              onClick={() => setRefresh(refresh + 1)}
+              width={28}
+            />
+          </div>
+          <Palette
+            palette={palette}
+            setPalette={setPalette}
+            setRefresh={() => setRefresh(refresh + 1)}
           />
-        </div>
-        <Palette
-          palette={palette}
-          setPalette={setPalette}
-          setRefresh={() => setRefresh(refresh + 1)}
-        />
-      </CanvasContainer>
+        </CanvasContainer>
+      </div>
     </Wrapper>
   );
 };

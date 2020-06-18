@@ -1,12 +1,12 @@
 import styled from "styled-components";
-import { Colors } from "flocc";
-import { Rule } from "../types/Rule";
+import { NeighborRule } from "../types/Rule";
 import { match, Pixel } from "../types/Pixel";
 import { X, ArrowRight } from "@styled-icons/foundation";
 import pixelToRGBA from "../utils/pixelToRGBA";
-import Delete from "./Delete";
-import { useState } from "react";
+import { useState, SyntheticEvent } from "react";
 import ColorPicker from "./ColorPicker";
+import Delete from "./styled/Delete";
+import StyledRuleBar from "./styled/StyledRuleBar";
 
 const iToX = (i: number): number => {
   return (i < 4 ? i : i + 1) % 3;
@@ -18,29 +18,6 @@ const iToY = (i: number): number => {
 
 const Tile = styled.rect`
   cursor: pointer;
-`;
-
-const RuleBar = styled.div`
-  background: #fff;
-  border: 1px solid #999;
-  box-shadow: 0 1px 2px 0 #999;
-  border-radius: 3px;
-  align-items: center;
-  display: flex;
-  width: 300px;
-  justify-content: space-between;
-  margin: 0 20px 20px 0;
-  padding: 10px;
-
-  span {
-    font-size: 32px;
-  }
-
-  &:hover {
-    ${Delete} {
-      display: block;
-    }
-  }
 `;
 
 const ShadowSVG = styled.svg`
@@ -57,12 +34,25 @@ export default ({
 }: {
   deleteRule: () => void;
   palette: Pixel[];
-  rule: Rule;
-  update: (r: Rule) => void;
+  rule: NeighborRule;
+  update: (r: NeighborRule) => void;
 }) => {
+  const [cursor, setCursor] = useState<{ x: Number; y: number }>({
+    x: -1,
+    y: -1,
+  });
   const [isPicking, setIsPicking] = useState<number | "self" | "output">(-1);
+  const onClick = (e: SyntheticEvent<HTMLDivElement, MouseEvent>): void => {
+    const bb =
+      e.target instanceof Element ? e.target.getBoundingClientRect() : null;
+    if (!bb) return;
+    setCursor({
+      x: Math.round(bb.x + bb.width / 2),
+      y: Math.round(bb.y + bb.height / 2),
+    });
+  };
   return (
-    <RuleBar>
+    <StyledRuleBar onClick={onClick}>
       <div>
         <ShadowSVG height={size * 3} width={size * 3}>
           {rule.input.map((n, i) => (
@@ -116,9 +106,9 @@ export default ({
               setIsPicking(-1);
             }}
             style={{
-              bottom: 15,
-              left: 0,
-              transform: "translateX(0)",
+              bottom: +cursor.x,
+              left: +cursor.y,
+              // transform: "translateX(0)",
             }}
           />
         ) : null}
@@ -144,6 +134,6 @@ export default ({
       <Delete onClick={deleteRule}>
         <X width={12} />
       </Delete>
-    </RuleBar>
+    </StyledRuleBar>
   );
 };
