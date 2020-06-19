@@ -1,14 +1,22 @@
 import styled from "styled-components";
+import { Colors } from "flocc";
 import { CompactPicker } from "react-color";
 import { Pixel } from "../types/Pixel";
 import pixelToHex from "../utils/pixelToHex";
+import Swatch from "./styled/Swatch";
+import SwatchButton from "./styled/SwatchButton";
+import pixelToRGBA from "../utils/pixelToRGBA";
+import RAINBOW from "../utils/RAINBOW";
 
 const ColorPicker = styled.div`
   background: #fff;
   bottom: 50px;
+  border: 1px solid #999;
   left: 50%;
   transform: translateX(-50%);
+  padding: 5px;
   position: absolute;
+  width: 112px;
   z-index: 2;
 
   &:after {
@@ -25,33 +33,56 @@ const ColorPicker = styled.div`
   }
 `;
 
-type ColorChange = (color: {
-  rgb: { r: number; g: number; b: number };
-}) => void;
+const ColorPickerInner = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+`;
+
+type ColorChange = (p: Pixel | "wild") => void;
 
 export default ({
-  color,
   colors,
   onChange,
   style,
+  wild,
 }: {
-  color?: Pixel;
   colors?: Pixel[];
   onChange: ColorChange;
   style?: React.CSSProperties;
+  wild?: boolean;
 }) => {
-  const props: {
-    color?: Pixel;
-    colors?: string[];
-    onChangeComplete: ColorChange;
-  } = {
-    color,
-    onChangeComplete: onChange,
-  };
-  if (colors) props.colors = colors.map(pixelToHex);
+  if (!colors) colors = Object.values(Colors);
   return (
     <ColorPicker style={style}>
-      <CompactPicker {...props} />
+      <ColorPickerInner>
+        {colors.map((color) => {
+          return (
+            <Swatch
+              style={{
+                background: pixelToRGBA(color),
+                width: 15,
+                height: 15,
+                margin: 5,
+              }}
+            >
+              <SwatchButton onClick={() => onChange(color)} />
+            </Swatch>
+          );
+        })}
+        {wild && (
+          <Swatch
+            style={{
+              background: RAINBOW,
+              width: 15,
+              height: 15,
+              margin: 5,
+            }}
+          >
+            <SwatchButton onClick={() => onChange("wild")} />
+          </Swatch>
+        )}
+      </ColorPickerInner>
     </ColorPicker>
   );
 };

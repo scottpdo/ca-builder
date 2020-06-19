@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { Refresh, Plus } from "@styled-icons/foundation";
 import Wrapper from "../components/Wrapper";
 import NeighborRuleBar from "../components/NeighborRuleBar";
+import ThresholdRuleBar from "../components/ThresholdRuleBar";
 import { Environment, CanvasRenderer, Terrain, Colors, utils } from "flocc";
 import { Pixel, isPixel, match } from "../types/Pixel";
-import { Rule, NeighborRule, ThresholdRule, Comparators } from "../types/Rule";
+import {
+  Rule,
+  NeighborRule,
+  ThresholdRule,
+  Comparators,
+  AllOrAny,
+} from "../types/Rule";
 import CanvasContainer from "../components/CanvasContainer";
 import RuleContainer from "../components/RuleContainer";
 import Palette from "../components/Palette";
@@ -30,22 +37,12 @@ export default () => {
   const [rules, setRules] = useState<Rule[]>([
     new ThresholdRule({
       thresholds: alive,
-      self: 1,
-      output: 1,
-    }),
-    new ThresholdRule({
-      thresholds: alive,
-      self: 0,
+      self: -1,
       output: 1,
     }),
     new ThresholdRule({
       thresholds: dead,
       self: 1,
-      output: 0,
-    }),
-    new ThresholdRule({
-      thresholds: dead,
-      self: 0,
       output: 0,
     }),
   ]);
@@ -68,7 +65,8 @@ export default () => {
       if (!isPixel(here)) return;
       const neighbors = terrain.neighbors(x, y, 1, true);
       for (let rule of rules) {
-        const matchesHere = match(here, palette[rule.self]);
+        const matchesHere =
+          rule.self === -1 ? true : match(here, palette[rule.self]);
         if (!matchesHere) continue;
 
         if (rule instanceof NeighborRule) {
@@ -82,7 +80,8 @@ export default () => {
             }) && matchesHere;
           if (passes) return palette[rule.output];
         } else if (rule instanceof ThresholdRule) {
-          const passes = Array.from(rule.thresholds.keys()).some((arr) => {
+          const method = rule.match === AllOrAny.ALL ? "every" : "some";
+          const passes = Array.from(rule.thresholds.keys())[method]((arr) => {
             const [colorIndex, threshold] = arr;
             if (!(rule instanceof ThresholdRule)) return false;
             const color = palette[colorIndex];
@@ -137,7 +136,17 @@ export default () => {
               }
             />
           ) : rule instanceof ThresholdRule ? (
-            <p key={i}>threshold rule</p>
+            <ThresholdRuleBar
+              deleteRule={() =>
+                setRules(rules.filter((_rule) => rule !== _rule))
+              }
+              key={i}
+              palette={palette}
+              rule={rule}
+              update={(r) =>
+                setRules(rules.map((_rule) => (_rule === rule ? r : _rule)))
+              }
+            />
           ) : null;
         })}
         <Plus

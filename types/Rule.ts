@@ -29,14 +29,23 @@ export class NeighborRule extends Rule {
   }
 }
 
+type ColorIndex = number;
+type Threshold = number;
+
+export enum AllOrAny {
+  ALL = "all",
+  ANY = "any",
+}
+
 export class ThresholdRule extends Rule {
-  thresholds: Map<[number, number], Comparators>;
+  match: AllOrAny = AllOrAny.ANY;
+  thresholds: Map<[ColorIndex, Threshold], Comparators>;
   constructor({
     thresholds,
     output,
     self,
   }: {
-    thresholds: Map<[number, number], Comparators>;
+    thresholds: Map<[ColorIndex, Threshold], Comparators>;
     output: number;
     self: number;
   }) {

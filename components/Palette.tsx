@@ -5,39 +5,12 @@ import { useState, useEffect } from "react";
 import ColorPicker from "./ColorPicker";
 import { Plus, X } from "@styled-icons/foundation";
 import Delete from "./styled/Delete";
+import SwatchButton from "./styled/SwatchButton";
+import Swatch from "./styled/Swatch";
 
 const Palette = styled.div`
   align-items: center;
   display: flex;
-`;
-
-const SwatchButton = styled.button`
-  appearance: none;
-  background: transparent;
-  border: 0 none;
-  border-radius: 0;
-  cursor: pointer;
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-
-  &:focus + ${Delete} {
-    display: block;
-  }
-`;
-
-const Swatch = styled.div`
-  box-shadow: 0 0 2px #666;
-  height: 40px;
-  margin: 0 10px;
-  width: 40px;
-
-  &:hover ${Delete} {
-    display: block;
-  }
 `;
 
 export default ({
@@ -67,6 +40,7 @@ export default ({
               <Swatch
                 style={{
                   background: pixelToRGBA(p),
+                  margin: "0 10px",
                 }}
               >
                 <SwatchButton
@@ -86,14 +60,8 @@ export default ({
                 <ColorPicker
                   color={p}
                   onChange={(color) => {
-                    const pixel = {
-                      r: color.rgb.r,
-                      g: color.rgb.g,
-                      b: color.rgb.b,
-                      a: 255,
-                    };
                     const newPalette = palette.map((_p, _i) => {
-                      return i === _i ? pixel : _p;
+                      return i === _i ? color : _p;
                     });
                     setPalette(newPalette);
                     setIsPicking(-1);
@@ -115,13 +83,7 @@ export default ({
           {isPicking === palette.length && (
             <ColorPicker
               onChange={(color) => {
-                const pixel = {
-                  r: color.rgb.r,
-                  g: color.rgb.g,
-                  b: color.rgb.b,
-                  a: 255,
-                };
-                setPalette(palette.concat(pixel));
+                setPalette(palette.concat(color));
                 setIsPicking(-1);
                 setRefresh();
               }}

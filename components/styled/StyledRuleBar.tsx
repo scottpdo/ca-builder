@@ -13,10 +13,6 @@ export default styled.div`
   margin: 0 20px 20px 0;
   padding: 10px;
 
-  span {
-    font-size: 32px;
-  }
-
   &:hover {
     ${Delete} {
       display: block;
