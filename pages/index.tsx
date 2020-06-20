@@ -152,17 +152,19 @@ export default () => {
         <Plus
           style={{ cursor: "pointer" }}
           width={26}
-          onClick={() =>
+          onClick={() => {
+            const thresholds = new Map();
+            thresholds.set([0, 0], Comparators.EQ);
             setRules(
               rules.concat(
-                new NeighborRule({
-                  input: new Array(8).fill(1),
-                  self: 0,
-                  output: 1,
+                new ThresholdRule({
+                  thresholds,
+                  self: -1,
+                  output: 0,
                 })
               )
-            )
-          }
+            );
+          }}
         />
       </RuleContainer>
       <div style={{ width: "100%" }}>

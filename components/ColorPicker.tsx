@@ -1,14 +1,12 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { Colors } from "flocc";
-import { CompactPicker } from "react-color";
 import { Pixel } from "../types/Pixel";
-import pixelToHex from "../utils/pixelToHex";
 import Swatch from "./styled/Swatch";
 import SwatchButton from "./styled/SwatchButton";
 import pixelToRGBA from "../utils/pixelToRGBA";
 import RAINBOW from "../utils/RAINBOW";
 
-const ColorPicker = styled.div`
+export const StyledColorPicker = styled.div<{ withDelete: boolean }>`
   background: #fff;
   bottom: 50px;
   border: 1px solid #999;
@@ -46,19 +44,22 @@ export default ({
   onChange,
   style,
   wild,
+  withDelete,
 }: {
   colors?: Pixel[];
   onChange: ColorChange;
   style?: React.CSSProperties;
   wild?: boolean;
+  withDelete?: boolean;
 }) => {
   if (!colors) colors = Object.values(Colors);
   return (
-    <ColorPicker style={style}>
+    <StyledColorPicker style={style} withDelete={withDelete}>
       <ColorPickerInner>
-        {colors.map((color) => {
+        {colors.map((color, i) => {
           return (
             <Swatch
+              key={i}
               style={{
                 background: pixelToRGBA(color),
                 width: 15,
@@ -83,6 +84,6 @@ export default ({
           </Swatch>
         )}
       </ColorPickerInner>
-    </ColorPicker>
+    </StyledColorPicker>
   );
 };

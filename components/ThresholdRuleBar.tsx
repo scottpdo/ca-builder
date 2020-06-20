@@ -1,12 +1,32 @@
+import styled from "styled-components";
 import StyledRuleBar from "./styled/StyledRuleBar";
 import { Pixel, match } from "../types/Pixel";
 import { ThresholdRule, Comparators, AllOrAny } from "../types/Rule";
 import pixelToRGBA from "../utils/pixelToRGBA";
 import SwatchButton from "./styled/SwatchButton";
 import Swatch from "./styled/Swatch";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ColorPicker from "./ColorPicker";
 import RAINBOW from "../utils/RAINBOW";
+import { Plus, X } from "@styled-icons/foundation";
+import Delete from "./styled/Delete";
+
+const DeleteThreshold = styled(X)`
+  margin-left: 6px;
+  opacity: 0;
+  pointer-events: none;
+`;
+
+const Threshold = styled.div`
+  align-items: center;
+  display: flex;
+  margin-right: -6px;
+
+  &:hover ${DeleteThreshold} {
+    opacity: 1;
+    pointer-events: auto;
+  }
+`;
 
 export default ({
   deleteRule,
@@ -23,6 +43,18 @@ export default ({
   const isWild = self === -1;
 
   const [isPicking, setIsPicking] = useState<"self" | "output" | number>(null);
+
+  const hideColorPicker = () => setIsPicking(null);
+  const onKeyDown = (e: KeyboardEvent) => e.keyCode === 27 && hideColorPicker();
+
+  useEffect(() => {
+    // document.body.addEventListener("click", hideColorPicker);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      // document.body.removeEventListener("click", hideColorPicker);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  });
 
   const onChangeComparator = (
     arr: [number, number],
@@ -46,7 +78,10 @@ export default ({
     <StyledRuleBar>
       <Swatch>
         <SwatchButton
-          onClick={() => setIsPicking(isPicking === "self" ? null : "self")}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsPicking(isPicking === "self" ? null : "self");
+          }}
           style={{
             background: isWild ? RAINBOW : pixelToRGBA(palette[self]),
           }}
@@ -67,6 +102,7 @@ export default ({
           />
         )}
       </Swatch>
+      {/* Thresholds */}
       <div>
         {thresholds.size > 1 && (
           <label>
@@ -89,10 +125,13 @@ export default ({
           const [colorIndex, threshold] = arr;
           const comparator = thresholds.get(arr);
           return (
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <Threshold key={i}>
               <Swatch>
                 <SwatchButton
-                  onClick={() => setIsPicking(isPicking === i ? null : i)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPicking(isPicking === i ? null : i);
+                  }}
                   style={{ background: pixelToRGBA(palette[colorIndex]) }}
                 />
                 {isPicking === i && (
@@ -122,18 +161,39 @@ export default ({
               <input
                 style={{ width: 40 }}
                 type="number"
+                max={8}
+                min={0}
                 defaultValue={threshold}
                 onChange={(e) =>
                   onChangeThreshold(arr, +e.currentTarget.value, comparator)
                 }
               />
-            </div>
+              {i > 0 && (
+                <DeleteThreshold
+                  width={12}
+                  onClick={() => {
+                    thresholds.delete(arr);
+                    update(rule);
+                  }}
+                />
+              )}
+            </Threshold>
           );
         })}
+        <Plus
+          width={14}
+          onClick={() => {
+            rule.thresholds.set([0, 0], Comparators.EQ);
+            update(rule);
+          }}
+        />
       </div>
       <Swatch style={{ background: pixelToRGBA(palette[output]) }}>
         <SwatchButton
-          onClick={() => setIsPicking(isPicking === "output" ? null : "output")}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsPicking(isPicking === "output" ? null : "output");
+          }}
         />
         {isPicking === "output" && (
           <ColorPicker
@@ -150,6 +210,9 @@ export default ({
           />
         )}
       </Swatch>
+      <Delete onClick={deleteRule}>
+        <X width={12} />
+      </Delete>
     </StyledRuleBar>
   );
 };
