@@ -75,7 +75,7 @@ export default ({
   };
 
   return (
-    <StyledRuleBar>
+    <StyledRuleBar style={{ paddingBottom: 20 }}>
       <Swatch>
         <SwatchButton
           onClick={(e) => {
@@ -181,6 +181,7 @@ export default ({
           );
         })}
         <Plus
+          style={{ position: "absolute" }}
           width={14}
           onClick={() => {
             rule.thresholds.set([0, 0], Comparators.EQ);

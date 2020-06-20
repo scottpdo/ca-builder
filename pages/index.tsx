@@ -15,20 +15,36 @@ import {
 import CanvasContainer from "../components/CanvasContainer";
 import RuleContainer from "../components/RuleContainer";
 import Palette from "../components/Palette";
-
-const run = (environment: Environment) => {
-  environment.tick();
-  animationFrame = window.requestAnimationFrame(() => run(environment));
-};
+import Controls from "../components/Controls";
 
 let environment: Environment;
 let renderer: CanvasRenderer;
 let terrain: Terrain;
 let animationFrame: number;
+let timeout: number;
 
 export default () => {
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [palette, setPalette] = useState<Pixel[]>([Colors.BLACK, Colors.WHITE]);
   const [refresh, setRefresh] = useState<number>(0);
+  const [speed, setSpeed] = useState<number>(100);
+  const [tick, setTick] = useState<number>(0);
+
+  const run = (environment: Environment) => {
+    window.cancelAnimationFrame(animationFrame);
+    window.clearTimeout(timeout);
+
+    environment.tick();
+
+    if (isPlaying) {
+      if (speed <= 16) {
+        animationFrame = window.requestAnimationFrame(() => run(environment));
+      } else {
+        timeout = window.setTimeout(() => run(environment), speed);
+      }
+    }
+  };
+
   const alive = new Map();
   alive.set([1, 3], Comparators.EQ);
   const dead = new Map();
@@ -110,14 +126,18 @@ export default () => {
       return here;
     });
     environment.use(terrain);
-    run(environment);
+    environment.renderers[0].render();
     return () => {
       environment = null;
       renderer = null;
       terrain = null;
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [palette, rules, refresh]);
+  }, [refresh]);
+
+  useEffect(() => {
+    run(environment);
+  }, [isPlaying, tick, speed]);
   return (
     <Wrapper>
       <RuleContainer>
@@ -179,10 +199,13 @@ export default () => {
             }}
           >
             <div id="canvas"></div>
-            <Refresh
-              style={{ cursor: "pointer" }}
-              onClick={() => setRefresh(refresh + 1)}
-              width={28}
+            <Controls
+              isPlaying={isPlaying}
+              refresh={() => setRefresh(refresh + 1)}
+              setIsPlaying={setIsPlaying}
+              setSpeed={setSpeed}
+              speed={speed}
+              tick={() => setTick(tick + 1)}
             />
           </div>
           <Palette
