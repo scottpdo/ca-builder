@@ -6,6 +6,7 @@ export default styled.div`
   border-radius: 3px;
   display: flex;
   flex-direction: column;
+  overflow: auto;
   padding: 20px;
   position: fixed;
   top: 30px;

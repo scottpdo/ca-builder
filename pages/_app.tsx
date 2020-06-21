@@ -10,14 +10,19 @@ const GlobalStyles = createGlobalStyle`
     padding: 0;
   }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  * {
+    font-family: 'Muli', sans-serif;
   }
 `;
 
 export default function MyApp({ Component, pageProps }) {
   return (
     <>
+      {/* TODO: should put these in the <head> but getting weird error */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Muli:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet"
+      />
       <GlobalStyles />
       <Component {...pageProps} />
     </>

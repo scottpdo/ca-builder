@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { NeighborRule } from "../types/Rule";
+import { NeighborRule, Rule } from "../types/Rule";
 import { match, Pixel } from "../types/Pixel";
 import { X, ArrowRight } from "@styled-icons/foundation";
 import pixelToRGBA from "../utils/pixelToRGBA";
@@ -32,7 +32,7 @@ export default ({
   rule,
   update,
 }: {
-  deleteRule: () => void;
+  deleteRule: (rule: Rule) => void;
   palette: Pixel[];
   rule: NeighborRule;
   update: (r: NeighborRule) => void;
@@ -88,13 +88,6 @@ export default ({
         {(typeof isPicking === "number" && isPicking >= 0) ||
         isPicking === "self" ? (
           <ColorPicker
-            color={
-              palette[
-                typeof isPicking === "number"
-                  ? rule.input[isPicking]
-                  : rule.self
-              ]
-            }
             colors={palette}
             onChange={(color) => {
               const { r, g, b } = color.rgb;
@@ -131,7 +124,7 @@ export default ({
           }}
         />
       </ShadowSVG>
-      <Delete onClick={deleteRule}>
+      <Delete onClick={() => deleteRule(rule)}>
         <X width={12} />
       </Delete>
     </StyledRuleBar>

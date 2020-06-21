@@ -2,8 +2,14 @@ import React from "react";
 import styled from "styled-components";
 import { Refresh, Pause, Play, Next } from "@styled-icons/foundation";
 
-const StyledControls = styled.div`
-  display: flex;
+const StyledControls = styled.div<{ width: number }>`
+  background: #eee;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  border: 1px solid #bbb;
+  border-top: 0 none;
+  padding: 10px;
+  width: ${(props) => props.width}px;
 `;
 
 export default ({
@@ -13,6 +19,7 @@ export default ({
   setSpeed,
   speed,
   tick,
+  width,
 }: {
   isPlaying: boolean;
   refresh: () => void;
@@ -20,29 +27,32 @@ export default ({
   setSpeed: React.Dispatch<React.SetStateAction<number>>;
   speed: number;
   tick: () => void;
+  width: number;
 }) => {
   return (
-    <StyledControls>
-      <Refresh style={{ cursor: "pointer" }} onClick={refresh} width={28} />
-      {isPlaying && (
-        <Pause
-          width={28}
-          onClick={() => {
-            setIsPlaying(false);
-          }}
-        />
-      )}
-      {!isPlaying && (
-        <>
-          <Play
+    <StyledControls width={width}>
+      <div>
+        <Refresh style={{ cursor: "pointer" }} onClick={refresh} width={28} />
+        {isPlaying && (
+          <Pause
             width={28}
             onClick={() => {
-              setIsPlaying(true);
+              setIsPlaying(false);
             }}
           />
-          <Next width={28} onClick={tick} />
-        </>
-      )}
+        )}
+        {!isPlaying && (
+          <>
+            <Play
+              width={28}
+              onClick={() => {
+                setIsPlaying(true);
+              }}
+            />
+            <Next width={28} onClick={tick} />
+          </>
+        )}
+      </div>
       <input
         type="range"
         defaultValue={-speed}

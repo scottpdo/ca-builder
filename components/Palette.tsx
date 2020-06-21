@@ -16,11 +16,9 @@ const Palette = styled.div`
 export default ({
   palette,
   setPalette,
-  setRefresh,
 }: {
   palette: Pixel[];
   setPalette: React.Dispatch<React.SetStateAction<Pixel[]>>;
-  setRefresh: () => void;
 }) => {
   const [isPicking, setIsPicking] = useState<number>(-1);
   const onKeyDown = (e: KeyboardEvent) => {
@@ -58,14 +56,13 @@ export default ({
               </Swatch>
               {isPicking === i && (
                 <ColorPicker
-                  color={p}
                   onChange={(color) => {
+                    if (color === "wild") return;
                     const newPalette = palette.map((_p, _i) => {
                       return i === _i ? color : _p;
                     });
                     setPalette(newPalette);
                     setIsPicking(-1);
-                    setRefresh();
                   }}
                 />
               )}
@@ -83,9 +80,9 @@ export default ({
           {isPicking === palette.length && (
             <ColorPicker
               onChange={(color) => {
+                if (color === "wild") return;
                 setPalette(palette.concat(color));
                 setIsPicking(-1);
-                setRefresh();
               }}
               style={{ bottom: 30 }}
             />

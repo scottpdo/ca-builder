@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import StyledRuleBar from "./styled/StyledRuleBar";
 import { Pixel, match } from "../types/Pixel";
-import { ThresholdRule, Comparators, AllOrAny } from "../types/Rule";
+import { ThresholdRule, Comparators, AllOrAny, Rule } from "../types/Rule";
 import pixelToRGBA from "../utils/pixelToRGBA";
 import SwatchButton from "./styled/SwatchButton";
 import Swatch from "./styled/Swatch";
@@ -10,6 +10,49 @@ import ColorPicker from "./ColorPicker";
 import RAINBOW from "../utils/RAINBOW";
 import { Plus, X } from "@styled-icons/foundation";
 import Delete from "./styled/Delete";
+
+const StyledThresholdRuleBar = styled(StyledRuleBar)`
+  flex-direction: column;
+  padding-bottom: 20px;
+`;
+
+const StyledLabels = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+
+  label {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  select {
+    font-size: 12px;
+    margin-top: -2px;
+  }
+`;
+
+const StyledRuleBarUI = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+`;
+
+const Thresholds = styled.div`
+  text-align: center;
+`;
+
+const AddThreshold = styled(Plus)`
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 2px;
+  margin-top: 5px;
+
+  &:hover {
+    background: #ddd;
+  }
+`;
 
 const DeleteThreshold = styled(X)`
   margin-left: 6px;
@@ -21,6 +64,10 @@ const Threshold = styled.div`
   align-items: center;
   display: flex;
   margin-right: -6px;
+  margin-top: 10px;
+  &:first-child {
+    margin-top: 0;
+  }
 
   &:hover ${DeleteThreshold} {
     opacity: 1;
@@ -34,12 +81,21 @@ export default ({
   rule,
   update,
 }: {
-  deleteRule: () => void;
+  deleteRule: (rule: Rule) => void;
   palette: Pixel[];
   rule: ThresholdRule;
   update: (r: ThresholdRule) => void;
 }) => {
   const { self, output, thresholds } = rule;
+  if (
+    self >= palette.length ||
+    output >= palette.length ||
+    Array.from(thresholds.keys()).some(
+      ([colorIndex]) => colorIndex >= palette.length
+    )
+  ) {
+    return null;
+  }
   const isWild = self === -1;
 
   const [isPicking, setIsPicking] = useState<"self" | "output" | number>(null);
@@ -75,38 +131,12 @@ export default ({
   };
 
   return (
-    <StyledRuleBar style={{ paddingBottom: 20 }}>
-      <Swatch>
-        <SwatchButton
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsPicking(isPicking === "self" ? null : "self");
-          }}
-          style={{
-            background: isWild ? RAINBOW : pixelToRGBA(palette[self]),
-          }}
-        />
-        {isPicking === "self" && (
-          <ColorPicker
-            colors={palette}
-            onChange={(color) => {
-              const colorIndex =
-                color === "wild"
-                  ? -1
-                  : palette.findIndex((p) => match(color, p));
-              rule.self = colorIndex;
-              update(rule);
-              setIsPicking(null);
-            }}
-            wild
-          />
-        )}
-      </Swatch>
-      {/* Thresholds */}
-      <div>
-        {thresholds.size > 1 && (
-          <label>
-            Match:{" "}
+    <StyledThresholdRuleBar>
+      <StyledLabels>
+        <label>A cell...</label>
+        <label>
+          with{" "}
+          {thresholds.size > 1 && (
             <select
               defaultValue={rule.match}
               onChange={(e) => {
@@ -119,101 +149,140 @@ export default ({
               <option>{AllOrAny.ALL}</option>
               <option>{AllOrAny.ANY}</option>
             </select>
-          </label>
-        )}
-        {Array.from(thresholds.keys()).map((arr, i) => {
-          const [colorIndex, threshold] = arr;
-          const comparator = thresholds.get(arr);
-          return (
-            <Threshold key={i}>
-              <Swatch>
-                <SwatchButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsPicking(isPicking === i ? null : i);
-                  }}
-                  style={{ background: pixelToRGBA(palette[colorIndex]) }}
+          )}{" "}
+          neighbors matching...
+        </label>
+        <label>turns:</label>
+      </StyledLabels>
+      <StyledRuleBarUI>
+        <Swatch>
+          <SwatchButton
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPicking(isPicking === "self" ? null : "self");
+            }}
+            style={{
+              background: isWild ? RAINBOW : pixelToRGBA(palette[self]),
+            }}
+          />
+          {isPicking === "self" && (
+            <ColorPicker
+              colors={palette}
+              onChange={(color) => {
+                const colorIndex =
+                  color === "wild"
+                    ? -1
+                    : palette.findIndex((p) => match(color, p));
+                rule.self = colorIndex;
+                update(rule);
+                setIsPicking(null);
+              }}
+              wild
+            />
+          )}
+        </Swatch>
+        <Thresholds>
+          {Array.from(thresholds.keys()).map((arr, i) => {
+            const [colorIndex, threshold] = arr;
+            const comparator = thresholds.get(arr);
+            return (
+              <Threshold key={i}>
+                <Swatch style={{ marginRight: 10, width: 25, height: 25 }}>
+                  <SwatchButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsPicking(isPicking === i ? null : i);
+                    }}
+                    style={{ background: pixelToRGBA(palette[colorIndex]) }}
+                  />
+                  {isPicking === i && (
+                    <ColorPicker
+                      colors={palette}
+                      onChange={(color) => {
+                        if (color === "wild") return;
+                        const newColorIndex = palette.findIndex((p) =>
+                          match(color, p)
+                        );
+                        arr[0] = newColorIndex;
+                        update(rule);
+                        setIsPicking(null);
+                      }}
+                      style={{ bottom: 35 }}
+                    />
+                  )}
+                </Swatch>
+                <select
+                  defaultValue={comparator}
+                  onChange={(e) =>
+                    // @ts-ignore
+                    onChangeComparator(arr, e.currentTarget.value)
+                  }
+                  style={{ marginRight: 10, height: 25 }}
+                >
+                  {Object.values(Comparators).map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+                <input
+                  style={{ height: 25, width: 40 }}
+                  type="number"
+                  max={8}
+                  min={0}
+                  defaultValue={threshold}
+                  onChange={(e) =>
+                    onChangeThreshold(arr, +e.currentTarget.value, comparator)
+                  }
                 />
-                {isPicking === i && (
-                  <ColorPicker
-                    colors={palette}
-                    onChange={(color) => {
-                      if (color === "wild") return;
-                      const newColorIndex = palette.findIndex((p) =>
-                        match(color, p)
-                      );
-                      arr[0] = newColorIndex;
+                {i > 0 && (
+                  <DeleteThreshold
+                    width={12}
+                    onClick={() => {
+                      thresholds.delete(arr);
                       update(rule);
-                      setIsPicking(null);
                     }}
                   />
                 )}
-              </Swatch>
-              <select
-                defaultValue={comparator}
-                // @ts-ignore
-                onChange={(e) => onChangeComparator(arr, e.currentTarget.value)}
-              >
-                {Object.values(Comparators).map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-              <input
-                style={{ width: 40 }}
-                type="number"
-                max={8}
-                min={0}
-                defaultValue={threshold}
-                onChange={(e) =>
-                  onChangeThreshold(arr, +e.currentTarget.value, comparator)
-                }
-              />
-              {i > 0 && (
-                <DeleteThreshold
-                  width={12}
-                  onClick={() => {
-                    thresholds.delete(arr);
-                    update(rule);
-                  }}
-                />
-              )}
-            </Threshold>
-          );
-        })}
-        <Plus
-          style={{ position: "absolute" }}
-          width={14}
-          onClick={() => {
-            rule.thresholds.set([0, 0], Comparators.EQ);
-            update(rule);
-          }}
-        />
-      </div>
-      <Swatch style={{ background: pixelToRGBA(palette[output]) }}>
-        <SwatchButton
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsPicking(isPicking === "output" ? null : "output");
-          }}
-        />
-        {isPicking === "output" && (
-          <ColorPicker
-            colors={palette}
-            onChange={(color) => {
-              const colorIndex =
-                color === "wild"
-                  ? -1
-                  : palette.findIndex((p) => match(color, p));
-              rule.output = colorIndex;
+              </Threshold>
+            );
+          })}
+          <AddThreshold
+            width={22}
+            onClick={() => {
+              rule.thresholds.set([0, 0], Comparators.EQ);
               update(rule);
-              setIsPicking(null);
             }}
           />
-        )}
-      </Swatch>
-      <Delete onClick={deleteRule}>
+        </Thresholds>
+        <Swatch style={{ background: pixelToRGBA(palette[output]) }}>
+          <SwatchButton
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPicking(isPicking === "output" ? null : "output");
+            }}
+          />
+          {isPicking === "output" && (
+            <ColorPicker
+              colors={palette}
+              onChange={(color) => {
+                const colorIndex =
+                  color === "wild"
+                    ? -1
+                    : palette.findIndex((p) => match(color, p));
+                rule.output = colorIndex;
+                update(rule);
+                setIsPicking(null);
+              }}
+            />
+          )}
+        </Swatch>
+      </StyledRuleBarUI>
+      <Delete
+        onClick={() => {
+          deleteRule(rule);
+        }}
+      >
         <X width={12} />
       </Delete>
-    </StyledRuleBar>
+    </StyledThresholdRuleBar>
   );
 };

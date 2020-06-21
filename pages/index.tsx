@@ -17,11 +17,69 @@ import RuleContainer from "../components/RuleContainer";
 import Palette from "../components/Palette";
 import Controls from "../components/Controls";
 
+const [width, height] = [500, 300];
+
 let environment: Environment;
 let renderer: CanvasRenderer;
 let terrain: Terrain;
-let animationFrame: number;
 let timeout: number;
+
+const updateTerrainRule = (
+  terrain: Terrain,
+  rules: Rule[],
+  palette: Pixel[]
+) => {
+  terrain.rule = null;
+  terrain.addRule((x, y) => {
+    const here = terrain.sample(x, y);
+    if (!isPixel(here)) return;
+    const neighbors = terrain.neighbors(x, y, 1, true);
+    for (let rule of rules) {
+      const matchesHere =
+        rule.self === -1 ? true : match(here, palette[rule.self]);
+      if (!matchesHere) continue;
+
+      if (rule instanceof NeighborRule) {
+        const passes =
+          neighbors.every((neighbor, i) => {
+            return (
+              isPixel(neighbor) &&
+              rule instanceof NeighborRule &&
+              match(neighbor, palette[rule.input[i]])
+            );
+          }) && matchesHere;
+        if (passes) return palette[rule.output];
+      } else if (rule instanceof ThresholdRule) {
+        const method = rule.match === AllOrAny.ALL ? "every" : "some";
+        const passes = Array.from(rule.thresholds.keys())[method]((arr) => {
+          const [colorIndex, threshold] = arr;
+          if (!(rule instanceof ThresholdRule)) return false;
+          const color = palette[colorIndex];
+          const comparator = rule.thresholds.get(arr);
+          const matchingNeighbors = neighbors.filter(
+            (neighbor) => isPixel(neighbor) && match(neighbor, color)
+          ).length;
+          switch (comparator) {
+            case Comparators.EQ:
+              return matchingNeighbors === threshold;
+            case Comparators.LT:
+              return matchingNeighbors < threshold;
+            case Comparators.GT:
+              return matchingNeighbors > threshold;
+            case Comparators.LTE:
+              return matchingNeighbors <= threshold;
+            case Comparators.GTE:
+              return matchingNeighbors >= threshold;
+            default:
+              return false;
+          }
+        });
+        if (passes) return palette[rule.output];
+      }
+    }
+    return here;
+  });
+};
 
 export default () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -31,17 +89,10 @@ export default () => {
   const [tick, setTick] = useState<number>(0);
 
   const run = (environment: Environment) => {
-    window.cancelAnimationFrame(animationFrame);
     window.clearTimeout(timeout);
-
     environment.tick();
-
     if (isPlaying) {
-      if (speed <= 16) {
-        animationFrame = window.requestAnimationFrame(() => run(environment));
-      } else {
-        timeout = window.setTimeout(() => run(environment), speed);
-      }
+      timeout = window.setTimeout(() => run(environment), speed);
     }
   };
 
@@ -63,7 +114,6 @@ export default () => {
     }),
   ]);
   useEffect(() => {
-    const [width, height] = [300, 300];
     environment = new Environment({ width, height });
     renderer = new CanvasRenderer(environment, {
       width,
@@ -76,68 +126,51 @@ export default () => {
       scale: 4,
     });
     terrain.init((x, y) => utils.sample(palette));
-    terrain.addRule((x, y) => {
-      const here = terrain.sample(x, y);
-      if (!isPixel(here)) return;
-      const neighbors = terrain.neighbors(x, y, 1, true);
-      for (let rule of rules) {
-        const matchesHere =
-          rule.self === -1 ? true : match(here, palette[rule.self]);
-        if (!matchesHere) continue;
-
-        if (rule instanceof NeighborRule) {
-          const passes =
-            neighbors.every((neighbor, i) => {
-              return (
-                isPixel(neighbor) &&
-                rule instanceof NeighborRule &&
-                match(neighbor, palette[rule.input[i]])
-              );
-            }) && matchesHere;
-          if (passes) return palette[rule.output];
-        } else if (rule instanceof ThresholdRule) {
-          const method = rule.match === AllOrAny.ALL ? "every" : "some";
-          const passes = Array.from(rule.thresholds.keys())[method]((arr) => {
-            const [colorIndex, threshold] = arr;
-            if (!(rule instanceof ThresholdRule)) return false;
-            const color = palette[colorIndex];
-            const comparator = rule.thresholds.get(arr);
-            const matchingNeighbors = neighbors.filter(
-              (neighbor) => isPixel(neighbor) && match(neighbor, color)
-            ).length;
-            switch (comparator) {
-              case Comparators.EQ:
-                return matchingNeighbors === threshold;
-              case Comparators.LT:
-                return matchingNeighbors < threshold;
-              case Comparators.GT:
-                return matchingNeighbors > threshold;
-              case Comparators.LTE:
-                return matchingNeighbors <= threshold;
-              case Comparators.GTE:
-                return matchingNeighbors >= threshold;
-              default:
-                return false;
-            }
-          });
-          if (passes) return palette[rule.output];
-        }
-      }
-      return here;
-    });
+    updateTerrainRule(terrain, rules, palette);
     environment.use(terrain);
     environment.renderers[0].render();
+    if (isPlaying) run(environment);
     return () => {
       environment = null;
       renderer = null;
       terrain = null;
-      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(timeout);
     };
   }, [refresh]);
 
   useEffect(() => {
-    run(environment);
-  }, [isPlaying, tick, speed]);
+    const removeRule = (rule: Rule) => {
+      setRules(rules.filter((_rule) => _rule !== rule));
+    };
+    rules.forEach((rule) => {
+      if (rule.self >= palette.length || rule.output >= palette.length) {
+        removeRule(rule);
+      }
+      if (rule instanceof ThresholdRule) {
+        Array.from(rule.thresholds.keys()).forEach(([colorIndex]) => {
+          if (colorIndex >= palette.length) removeRule(rule);
+        });
+      }
+    });
+    updateTerrainRule(terrain, rules, palette);
+  }, [palette]);
+
+  useEffect(() => {
+    updateTerrainRule(terrain, rules, palette);
+  }, [rules]);
+
+  useEffect(() => {
+    // if environment.time === 1, that's because only the above
+    // useEffect ran -- so wait until isPlaying or tick actually changes
+    if (environment.time > 1) run(environment);
+  }, [isPlaying, tick]);
+
+  useEffect(() => {
+    if (environment.time === 1 || !isPlaying) return;
+
+    window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => run(environment), speed);
+  }, [speed]);
   return (
     <Wrapper>
       <RuleContainer>
@@ -145,9 +178,10 @@ export default () => {
         {rules.map((rule, i) => {
           return rule instanceof NeighborRule ? (
             <NeighborRuleBar
-              deleteRule={() =>
-                setRules(rules.filter((_rule) => rule !== _rule))
-              }
+              deleteRule={(rule) => {
+                setRules(rules.filter((_rule) => rule !== _rule));
+                setRefresh(refresh + 1);
+              }}
               key={i}
               palette={palette}
               rule={rule}
@@ -157,9 +191,9 @@ export default () => {
             />
           ) : rule instanceof ThresholdRule ? (
             <ThresholdRuleBar
-              deleteRule={() =>
-                setRules(rules.filter((_rule) => rule !== _rule))
-              }
+              deleteRule={(rule) => {
+                setRules(rules.filter((_rule) => rule !== _rule));
+              }}
               key={i}
               palette={palette}
               rule={rule}
@@ -198,7 +232,7 @@ export default () => {
               justifyContent: "center",
             }}
           >
-            <div id="canvas"></div>
+            <div id="canvas" style={{ width, height }}></div>
             <Controls
               isPlaying={isPlaying}
               refresh={() => setRefresh(refresh + 1)}
@@ -206,13 +240,10 @@ export default () => {
               setSpeed={setSpeed}
               speed={speed}
               tick={() => setTick(tick + 1)}
+              width={width}
             />
           </div>
-          <Palette
-            palette={palette}
-            setPalette={setPalette}
-            setRefresh={() => setRefresh(refresh + 1)}
-          />
+          <Palette palette={palette} setPalette={setPalette} />
         </CanvasContainer>
       </div>
     </Wrapper>
