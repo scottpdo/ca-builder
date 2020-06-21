@@ -39,13 +39,13 @@ export enum AllOrAny {
 
 export class ThresholdRule extends Rule {
   match: AllOrAny = AllOrAny.ANY;
-  thresholds: Map<[ColorIndex, Threshold], Comparators>;
+  thresholds: [ColorIndex, Comparators, Threshold][];
   constructor({
     thresholds,
     output,
     self,
   }: {
-    thresholds: Map<[ColorIndex, Threshold], Comparators>;
+    thresholds: [ColorIndex, Comparators, Threshold][];
     output: number;
     self: number;
   }) {

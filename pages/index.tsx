@@ -51,11 +51,10 @@ const updateTerrainRule = (
         if (passes) return palette[rule.output];
       } else if (rule instanceof ThresholdRule) {
         const method = rule.match === AllOrAny.ALL ? "every" : "some";
-        const passes = Array.from(rule.thresholds.keys())[method]((arr) => {
-          const [colorIndex, threshold] = arr;
+        const passes = rule.thresholds[method]((arr) => {
+          const [colorIndex, comparator, threshold] = arr;
           if (!(rule instanceof ThresholdRule)) return false;
           const color = palette[colorIndex];
-          const comparator = rule.thresholds.get(arr);
           const matchingNeighbors = neighbors.filter(
             (neighbor) => isPixel(neighbor) && match(neighbor, color)
           ).length;
@@ -96,11 +95,11 @@ export default () => {
     }
   };
 
-  const alive = new Map();
-  alive.set([1, 3], Comparators.EQ);
-  const dead = new Map();
-  dead.set([1, 2], Comparators.LT);
-  dead.set([1, 3], Comparators.GT);
+  const alive: [number, Comparators, number][] = [[1, Comparators.EQ, 3]];
+  const dead: [number, Comparators, number][] = [
+    [1, Comparators.LT, 2],
+    [1, Comparators.GT, 3],
+  ];
   const [rules, setRules] = useState<Rule[]>([
     new ThresholdRule({
       thresholds: alive,
@@ -147,7 +146,7 @@ export default () => {
         removeRule(rule);
       }
       if (rule instanceof ThresholdRule) {
-        Array.from(rule.thresholds.keys()).forEach(([colorIndex]) => {
+        rule.thresholds.forEach(([colorIndex]) => {
           if (colorIndex >= palette.length) removeRule(rule);
         });
       }
@@ -207,8 +206,9 @@ export default () => {
           style={{ cursor: "pointer" }}
           width={26}
           onClick={() => {
-            const thresholds = new Map();
-            thresholds.set([0, 0], Comparators.EQ);
+            const thresholds: [number, Comparators, number][] = [
+              [0, Comparators.EQ, 0],
+            ];
             setRules(
               rules.concat(
                 new ThresholdRule({

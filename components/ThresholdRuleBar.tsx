@@ -90,9 +90,7 @@ export default ({
   if (
     self >= palette.length ||
     output >= palette.length ||
-    Array.from(thresholds.keys()).some(
-      ([colorIndex]) => colorIndex >= palette.length
-    )
+    thresholds.some(([colorIndex]) => colorIndex >= palette.length)
   ) {
     return null;
   }
@@ -112,21 +110,13 @@ export default ({
     };
   });
 
-  const onChangeComparator = (
-    arr: [number, number],
-    comparator: Comparators
-  ) => {
-    thresholds.set(arr, comparator);
+  const onChangeComparator = (i: number, comparator: Comparators) => {
+    thresholds[i][1] = comparator;
     update(rule);
   };
 
-  const onChangeThreshold = (
-    arr: [number, number],
-    threshold: number,
-    comparator: Comparators
-  ) => {
-    arr[1] = threshold;
-    thresholds.set(arr, comparator);
+  const onChangeThreshold = (i: number, threshold: number) => {
+    thresholds[i][2] = threshold;
     update(rule);
   };
 
@@ -136,7 +126,7 @@ export default ({
         <label>A cell...</label>
         <label>
           with{" "}
-          {thresholds.size > 1 && (
+          {thresholds.length > 1 && (
             <select
               defaultValue={rule.match}
               onChange={(e) => {
@@ -182,9 +172,8 @@ export default ({
           )}
         </Swatch>
         <Thresholds>
-          {Array.from(thresholds.keys()).map((arr, i) => {
-            const [colorIndex, threshold] = arr;
-            const comparator = thresholds.get(arr);
+          {thresholds.map((arr, i) => {
+            const [colorIndex, comparator, threshold] = arr;
             return (
               <Threshold key={i}>
                 <Swatch style={{ marginRight: 10, width: 25, height: 25 }}>
@@ -215,7 +204,7 @@ export default ({
                   defaultValue={comparator}
                   onChange={(e) =>
                     // @ts-ignore
-                    onChangeComparator(arr, e.currentTarget.value)
+                    onChangeComparator(i, e.currentTarget.value)
                   }
                   style={{ marginRight: 10, height: 25 }}
                 >
@@ -229,15 +218,13 @@ export default ({
                   max={8}
                   min={0}
                   defaultValue={threshold}
-                  onChange={(e) =>
-                    onChangeThreshold(arr, +e.currentTarget.value, comparator)
-                  }
+                  onChange={(e) => onChangeThreshold(i, +e.currentTarget.value)}
                 />
                 {i > 0 && (
                   <DeleteThreshold
                     width={12}
                     onClick={() => {
-                      thresholds.delete(arr);
+                      thresholds.splice(i, 1);
                       update(rule);
                     }}
                   />
@@ -248,7 +235,7 @@ export default ({
           <AddThreshold
             width={22}
             onClick={() => {
-              rule.thresholds.set([0, 0], Comparators.EQ);
+              thresholds.push([0, Comparators.EQ, 0]);
               update(rule);
             }}
           />
