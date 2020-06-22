@@ -1,13 +1,9 @@
 import styled from "styled-components";
 
 export default styled.div`
-  background: #fff;
-  border: 1px solid #999;
-  border-radius: 3px;
   display: flex;
   flex-direction: column;
   overflow: auto;
-  padding: 20px;
   position: fixed;
   top: 30px;
   right: 30px;

@@ -8,7 +8,7 @@ export default styled.div`
   border-radius: 3px;
   align-items: center;
   display: flex;
-  width: 320px;
+  width: 360px;
   justify-content: space-between;
   margin: 0 20px 20px 0;
   padding: 10px;
