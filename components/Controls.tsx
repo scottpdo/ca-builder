@@ -1,6 +1,16 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
-import { Refresh, Pause, Play, Next } from "@styled-icons/foundation";
+import {
+  Refresh,
+  Pause,
+  Play,
+  Next,
+  Plus,
+  Minus,
+} from "@styled-icons/foundation";
+import pixelToRGBA from "../utils/pixelToRGBA";
+import { Pixel } from "../types/Pixel";
+import { utils } from "flocc";
 
 const StyledControls = styled.div<{ width: number }>`
   background: #fff;
@@ -35,17 +45,40 @@ const SpeedContainer = styled.div`
   }
 `;
 
+const Distribution = styled.div`
+  height: 20px;
+
+  span {
+    background: #eee;
+    border: 1px solid #999;
+    cursor: col-resize;
+    display: block;
+    position: absolute;
+    top: -4px;
+    height: 28px;
+    right: -3px;
+    width: 7px;
+    z-index: 2;
+  }
+`;
+
 export default ({
+  distribution,
   isPlaying,
+  palette,
   refresh,
+  setDistribution,
   setIsPlaying,
   setSpeed,
   speed,
   tick,
   width,
 }: {
+  distribution: number[];
   isPlaying: boolean;
+  palette: Pixel[];
   refresh: () => void;
+  setDistribution: React.Dispatch<React.SetStateAction<number[]>>;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
   setSpeed: React.Dispatch<React.SetStateAction<number>>;
   speed: number;
@@ -89,6 +122,22 @@ export default ({
         <label onClick={() => setSpeed(500)}>Slow</label>
         <label onClick={() => setSpeed(0)}>Fast</label>
       </SpeedContainer>
+      {/* <div style={{ border: "1px solid #999", display: "flex" }}>
+        {palette.map((p, i) => {
+          return (
+            <Distribution
+              style={{
+                width: distribution[i] * 100 + "%",
+                background: pixelToRGBA(p),
+              }}
+              key={i}
+            >
+              <Minus width={14} />
+              <Plus width={14} />
+            </Distribution>
+          );
+        })}
+      </div> */}
     </StyledControls>
   );
 };

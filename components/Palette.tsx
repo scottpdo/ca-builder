@@ -14,10 +14,14 @@ const Palette = styled.div`
 `;
 
 export default ({
+  distribution,
   palette,
+  setDistribution,
   setPalette,
 }: {
+  distribution: number[];
   palette: Pixel[];
+  setDistribution: React.Dispatch<React.SetStateAction<number[]>>;
   setPalette: React.Dispatch<React.SetStateAction<Pixel[]>>;
 }) => {
   const [isPicking, setIsPicking] = useState<number>(-1);
@@ -48,6 +52,12 @@ export default ({
                   <Delete
                     onClick={() => {
                       setPalette(palette.filter((_p, _i) => _i !== i));
+                      const newDistribution = distribution
+                        .filter((d, _i) => _i !== i)
+                        .map(
+                          (d) => (d * palette.length) / (palette.length - 1)
+                        );
+                      setDistribution(newDistribution);
                     }}
                   >
                     <X width={12} />
@@ -64,6 +74,7 @@ export default ({
                     setPalette(newPalette);
                     setIsPicking(-1);
                   }}
+                  position="bottom"
                 />
               )}
             </div>
@@ -72,7 +83,7 @@ export default ({
         <div>
           <Plus
             width={18}
-            style={{ marginLeft: 6 }}
+            style={{ cursor: "pointer", marginLeft: 6 }}
             onClick={() =>
               setIsPicking(isPicking === palette.length ? -1 : palette.length)
             }
@@ -82,9 +93,16 @@ export default ({
               onChange={(color) => {
                 if (color === "wild") return;
                 setPalette(palette.concat(color));
+                const newDistribution = distribution
+                  .map(
+                    (d) => (d * distribution.length) / (distribution.length + 1)
+                  )
+                  .concat(1 / (distribution.length + 1));
+                setDistribution(newDistribution);
                 setIsPicking(-1);
               }}
-              style={{ bottom: 30 }}
+              style={{ left: 15, top: 30 }}
+              position="bottom"
             />
           )}
         </div>

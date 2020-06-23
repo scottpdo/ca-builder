@@ -81,6 +81,7 @@ const updateTerrainRule = (
 };
 
 export default () => {
+  const [distribution, setDistribution] = useState<number[]>([0.5, 0.5]);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [palette, setPalette] = useState<Pixel[]>([Colors.BLACK, Colors.WHITE]);
   const [refresh, setRefresh] = useState<number>(0);
@@ -124,7 +125,7 @@ export default () => {
       grayscale: false,
       scale: 4,
     });
-    terrain.init((x, y) => utils.sample(palette));
+    terrain.init((x, y) => utils.sample(palette, distribution));
     updateTerrainRule(terrain, rules, palette);
     environment.use(terrain);
     environment.renderers[0].render();
@@ -173,7 +174,13 @@ export default () => {
   return (
     <Wrapper>
       <RuleContainer>
-        <h2>Rules</h2>
+        <Palette
+          distribution={distribution}
+          palette={palette}
+          setPalette={setPalette}
+          setDistribution={setDistribution}
+        />
+        {/* <h2>Rules</h2> */}
         {rules.map((rule, i) => {
           return rule instanceof NeighborRule ? (
             <NeighborRuleBar
@@ -234,8 +241,11 @@ export default () => {
           >
             <div id="canvas" style={{ width, height }}></div>
             <Controls
+              distribution={distribution}
+              palette={palette}
               isPlaying={isPlaying}
               refresh={() => setRefresh(refresh + 1)}
+              setDistribution={setDistribution}
               setIsPlaying={setIsPlaying}
               setSpeed={setSpeed}
               speed={speed}
@@ -243,7 +253,6 @@ export default () => {
               width={width}
             />
           </div>
-          <Palette palette={palette} setPalette={setPalette} />
         </CanvasContainer>
       </div>
     </Wrapper>
