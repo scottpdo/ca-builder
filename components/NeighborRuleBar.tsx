@@ -90,13 +90,13 @@ export default ({
           <ColorPicker
             colors={palette}
             onChange={(color) => {
-              const { r, g, b } = color.rgb;
-              const p = palette.findIndex((_p) => {
-                return match(_p, { r, g, b, a: 255 });
-              });
-              rule.input[isPicking] = p;
-              update(rule);
-              setIsPicking(-1);
+              // const { r, g, b } = color.rgb;
+              // const p = palette.findIndex((_p) => {
+              //   return match(_p, { r, g, b, a: 255 });
+              // });
+              // rule.input[isPicking] = p;
+              // update(rule);
+              // setIsPicking(-1);
             }}
             style={{
               bottom: +cursor.x,
